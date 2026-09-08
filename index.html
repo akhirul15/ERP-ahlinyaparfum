@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AhlinyaParfum ERP — POS Kasir</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">AP</div><div><b>AhlinyaParfum</b><span>ERP • Kasir</span></div></div>
+    <div class="branch"><span class="dot"></span><div><small>Cabang aktif</small><strong>Ayahanda</strong></div></div>
+    <div class="top-actions"><button class="icon-btn" title="Notifikasi">🔔</button><div class="user"><span class="avatar">SA</span><div><b>Satoru</b><small>Kasir</small></div></div></div>
+
+
+      <!-- Tombol Logout -->
+      <button class="link-btn" id="btnLogout" style="color: #ef4444; border-color: #fee2e2; margin-left: 10px;">Logout</button>
+    </div>
+
+  </header>
+
+  <main class="app">
+    <section class="workspace">
+      <div class="page-head">
+        <div><p class="eyebrow">POINT OF SALE</p><h1>Penjualan</h1><p class="muted">Cari parfum, pilih varian, botol, member, lalu selesaikan pembayaran.</p></div>
+        <div class="status-pill">● Kasir siap</div>
+      </div>
+
+      <div class="search-row">
+        <div class="search-box"><span>⌕</span><input id="search" placeholder="Cari nama parfum, kode, atau kategori..." autocomplete="off"><kbd>Ctrl K</kbd></div>
+        <button class="filter-btn" id="filterBtn">☰ Filter</button>
+
+        <!-- Tombol Tambahan Modul Opname -->
+        <button class="filter-btn" id="btnStockOpname" style="background: #eef2ff; color: #3949ab; border-color: #c7d2fe;">📦 Stock Opname</button>
+        <!-- Tombol Tambahan Modul Riwayat -->
+        <button class="filter-btn" id="btnRiwayatTransaksi" style="background: #fffbe6; color: #b45309; border-color: #fef08a;">🕒 Riwayat Transaksi</button>
+
+      </div>
+
+      <div class="catalog-layout">
+        <aside class="catalog">
+          <div class="section-title"><b>Produk</b><span id="resultCount"></span></div>
+          <div id="categoryChips" class="chips"></div>
+          <div id="productList" class="product-list"></div>
+        </aside>
+
+        <section class="cart-panel">
+          <div class="cart-head"><div><b>Keranjang</b><span id="cartCount">0 item</span></div><button class="link-btn" id="clearCart">Kosongkan</button></div>
+          <div id="cartItems" class="cart-items"></div>
+          <div class="empty-cart" id="emptyCart"><div class="empty-icon">🛍</div><b>Keranjang masih kosong</b><span>Pilih parfum dari daftar produk.</span></div>
+
+          <div class="customer-card">
+            <div class="customer-head"><b>Member / Pelanggan</b><button class="link-btn" id="findMember">Cari member</button></div>
+            <div class="member-input"><span>♙</span><input id="memberInput" placeholder="Nama, nomor WhatsApp, atau kode member"><button id="useMember">Gunakan</button></div>
+            <div id="memberInfo" class="member-info hidden"></div>
+          </div>
+
+          <div class="summary">
+            <div><span>Subtotal</span><b id="subtotal">Rp0</b></div>
+            <div><span>Diskon member</span><b id="discount">- Rp0</b></div>
+            <div><span>Poin digunakan</span><b id="pointsDiscount">- Rp0</b></div>
+            <div class="grand"><span>Total</span><strong id="total">Rp0</strong></div>
+          </div>
+          <button class="pay-btn" id="payBtn">Bayar <span id="payTotal">Rp0</span> →</button>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- Variant modal -->
+  <!-- Modal Tambah Keranjang (Input Manual) -->
+  <div class="modal-backdrop hidden" id="variantModal">
+    <div class="modal small">
+      <div class="modal-head">
+        <div>
+          <small>Input Pembelian</small>
+          <h2 id="variantTitle">Nama Produk</h2>
+        </div>
+        <button class="close" data-close="variantModal">×</button>
+      </div>
+      
+      <div class="variant-grid" style="grid-template-columns: 1fr; padding-bottom: 0;">
+        <div>
+          <label>Jumlah Volume (Mili)</label>
+          <div style="display: flex; align-items: center; gap: 10px; margin-top: 7px;">
+            <input type="number" id="volumeInput" class="money-input" style="margin: 0; flex: 1;" placeholder="Ketik jumlah mili (contoh: 30)" min="1">
+            <span style="font-weight: 700; color: #68717e; font-size: 14px;">ml</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="variant-bottom">
+        <div>
+          <small>Total Harga</small>
+          <strong id="variantPrice">Rp0</strong>
+        </div>
+        <div class="qty">
+          <button id="qtyMinus">−</button>
+          <b id="qtyValue">1</b>
+          <button id="qtyPlus">+</button>
+        </div>
+        <button class="primary" id="addVariant">Tambah</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment modal -->
+  <div class="modal-backdrop hidden" id="paymentModal">
+    <div class="modal small">
+      <div class="modal-head"><div><small>Checkout</small><h2>Pembayaran</h2></div><button class="close" data-close="paymentModal">×</button></div>
+      <div class="payment-total"><span>Total tagihan</span><strong id="checkoutTotal">Rp0</strong></div>
+      <div class="pay-methods">
+        <button class="pay-method active" data-method="Cash">💵 <b>Cash</b><small>Tunai</small></button>
+        <button class="pay-method" data-method="QRIS">▣ <b>QRIS</b><small>Scan QR</small></button>
+        <button class="pay-method" data-method="Transfer">↗ <b>Transfer</b><small>Bank</small></button>
+      </div>
+      <label>Nominal diterima</label><input id="cashReceived" class="money-input" type="number" placeholder="0">
+      <div class="change"><span>Kembalian</span><strong id="change">Rp0</strong></div>
+      <button class="primary wide" id="finishPay">Selesaikan Transaksi</button>
+    </div>
+  </div>
+
+  <!-- Receipt modal -->
+  <div class="modal-backdrop hidden" id="receiptModal">
+    <div class="modal receipt-modal">
+      <div class="modal-head"><div><small>Transaksi berhasil</small><h2>Resi Penjualan</h2></div><button class="close" data-close="receiptModal">×</button></div>
+      <div id="receiptPreview" class="receipt"></div>
+      <div class="receipt-actions">
+        <button class="secondary" id="printReceipt">🖨 Cetak Resi</button>
+        <button class="secondary" id="digitalReceipt">▣ Resi Digital</button>
+        <button class="whatsapp" id="sendWhatsapp">WhatsApp</button>
+        <button class="secondary" id="sendEmail">✉ Email</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+
+<!-- Modal Login (Overlay Penuh) -->
+  <div class="modal-backdrop" id="loginModal" style="z-index: 9999; background: #111827;">
+    <div class="modal small" style="text-align: center; padding: 40px 20px;">
+      <div class="brand-mark" style="margin: 0 auto 15px; width: 60px; height: 60px; font-size: 24px;">AP</div>
+      <h2>Login Kasir</h2>
+      <p class="muted" style="margin-bottom: 25px;">Sistem POS ahlinyaparfum</p>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label style="font-size: 11px; font-weight: 700; color: #68717e;">Username</label>
+        <input type="text" id="loginUsername" class="money-input" style="width: 100%; margin: 5px 0 0;" placeholder="Masukkan username">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label style="font-size: 11px; font-weight: 700; color: #68717e;">PIN / Password</label>
+        <input type="password" id="loginPin" class="money-input" style="width: 100%; margin: 5px 0 0;" placeholder="Masukkan PIN">
+      </div>
+      
+      <button class="primary wide" id="btnLogin">Masuk ke Sistem</button>
+    </div>
+  </div>
+
+
+<!-- Modal Stock Opname -->
+  <div class="modal-backdrop hidden" id="opnameModal" style="z-index: 100;">
+    <div class="modal receipt-modal">
+      <div class="modal-head">
+        <div>
+          <small>Modul Kasir</small>
+          <h2>Pengecekan Stok (Opname)</h2>
+        </div>
+        <button class="close" data-close="opnameModal">×</button>
+      </div>
+      
+      <!-- Tabel Opname -->
+
+<!-- Form CRUD Tambah Varian Baru -->
+      <div style="padding: 20px 20px 0; display: flex; gap: 10px;">
+        <input type="text" id="newProdCode" class="money-input" style="margin:0; flex: 1;" placeholder="Kode">
+        <input type="text" id="newProdName" class="money-input" style="margin:0; flex: 2;" placeholder="Nama Varian">
+        <select id="newProdCat" class="money-input" style="margin:0; flex: 1; padding: 11px;">
+          <option value="Refill (ml)">Refill (ml)</option>
+          <option value="Produk (pcs)">Produk (pcs)</option>
+          <option value="Botol (pcs)">Botol (pcs)</option>
+        </select>
+        <input type="number" id="newProdPrice" class="money-input" style="margin:0; flex: 1;" placeholder="Harga (Rp)">
+        <button class="primary" id="btnAddNewProduct" style="margin:0;">Tambah</button>
+      </div>
+
+
+
+      <div style="padding: 20px; max-height: 55vh; overflow-y: auto;">
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid #edf0f3;">
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">Kode</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">Nama Produk</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">Stok Sistem</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e; width: 100px;">Stok Fisik</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e; text-align: right;">Selisih</th>
+            </tr>
+          </thead>
+          <tbody id="opnameTableBody">
+            <!-- Data produk akan di-render di sini oleh JavaScript -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="variant-bottom">
+        <button class="primary wide" id="btnSimpanOpname">Simpan Penyesuaian Stok</button>
+      </div>
+    </div>
+  </div>
+
+
+
+<!-- Modal Riwayat Transaksi -->
+  <div class="modal-backdrop hidden" id="riwayatModal" style="z-index: 100;">
+    <div class="modal receipt-modal">
+      <div class="modal-head">
+        <div>
+          <small>Modul Kasir Cabang</small>
+          <h2>Riwayat & Void Transaksi</h2>
+        </div>
+        <button class="close" data-close="riwayatModal">×</button>
+      </div>
+      
+      <div style="padding: 20px; max-height: 55vh; overflow-y: auto;">
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid #edf0f3;">
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">ID Transaksi</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">Waktu</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e;">Metode</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e; text-align: right;">Total</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e; text-align: center;">Status</th>
+              <th style="padding: 10px 5px; font-size: 11px; color: #8a929e; text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="riwayatTableBody">
+            <!-- Data riwayat akan di-render di sini oleh JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <script src="riwayattransaksikasircabang.js"></script>
+  <script src="stockopnamekasir.js"></script>
+  <script src="login.js"></script>
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
