@@ -98,34 +98,50 @@ const StockOpname = {
     },
 
     // --- POSISI TEPAT submitOpname() ---
-    submitOpname() {
-        const productList = window.PRODUCTS || products || [];
-        let updatedCount = 0;
+    async submitOpname() {
+        const adjustments = this.opnameData.filter(op => op.physicalStock !== op.systemStock);
 
-        this.opnameData.forEach(op => {
-            if (op.physicalStock !== op.systemStock) {
-                const target = productList.find(p => p.code === op.code);
-                if (target) {
-                    target.stock = op.physicalStock;
-                    updatedCount++;
-                }
-            }
-        });
-
-        const modal = document.getElementById('opnameModal');
-        if (modal) modal.classList.add('hidden');
-
-        if (typeof renderProducts === 'function') {
-            renderProducts();
+        if (adjustments.length === 0) {
+            toast('Tidak ada perubahan stok untuk disimpan.');
+            const modal = document.getElementById('opnameModal');
+            if (modal) modal.classList.add('hidden');
+            return;
         }
 
-        if (typeof toast === 'function') {
-            toast(`Stock Opname selesai! ${updatedCount} produk disesuaikan.`);
+        try {
+            const response = await fetch('http://localhost:3000/api/inventory/opname', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.currentUser ? Auth.currentUser.token : ''}`
+                },
+                body: JSON.stringify({
+                    branch_id: Auth.currentUser.branch_id,
+                    user_id: Auth.currentUser.id,
+                    adjustments: adjustments
+                })
+            });
+
+            if (response.ok) {
+                toast(`Stock Opname selesai! ${adjustments.length} produk disesuaikan.`);
+                const modal = document.getElementById('opnameModal');
+                if (modal) modal.classList.add('hidden');
+
+                // Refresh data produk
+                if (typeof fetchProducts === 'function') {
+                    fetchProducts();
+                }
+            } else {
+                toast('Gagal menyimpan hasil opname ke server.');
+            }
+        } catch (error) {
+            console.error('Error submitting opname', error);
+            toast('Terjadi kesalahan jaringan.');
         }
     }, // <-- PERHATIKAN KOMA INI SANGAT PENTING
 
     // --- POSISI TEPAT addNewProduct() ---
-    addNewProduct() {
+    async addNewProduct() {
         const code = document.getElementById('newProdCode').value.trim();
         const name = document.getElementById('newProdName').value.trim();
         const category = document.getElementById('newProdCat').value;
@@ -136,38 +152,43 @@ const StockOpname = {
             return;
         }
 
-        const productList = window.PRODUCTS || products || [];
+        try {
+            const response = await fetch('http://localhost:3000/api/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.currentUser ? Auth.currentUser.token : ''}`
+                },
+                body: JSON.stringify({
+                    code: code,
+                    name: name,
+                    category: category,
+                    basePrice: price,
+                    branch_id: Auth.currentUser.branch_id
+                })
+            });
 
-        if (productList.some(p => p.code === code)) {
-            if (typeof toast === 'function') toast('Kode produk sudah ada!');
-            return;
+            if (response.ok) {
+                toast(`Berhasil menambahkan ${name}!`);
+                document.getElementById('newProdCode').value = '';
+                document.getElementById('newProdName').value = '';
+                document.getElementById('newProdPrice').value = '';
+
+                // Refresh data produk untuk mendapatkan produk baru
+                if (typeof fetchProducts === 'function') {
+                    await fetchProducts();
+                }
+
+                // Refresh tabel opname
+                this.openModal();
+            } else {
+                const data = await response.json();
+                toast(data.error || 'Gagal menambahkan produk');
+            }
+        } catch (error) {
+            console.error('Error adding product', error);
+            toast('Terjadi kesalahan jaringan.');
         }
-
-        const newProduct = {
-            code: code,
-            name: name,
-            category: category,
-            basePrice: price,
-            stock: 0
-        };
-
-        productList.push(newProduct);
-
-        this.opnameData.unshift({
-            code: newProduct.code,
-            name: newProduct.name,
-            systemStock: newProduct.stock,
-            physicalStock: newProduct.stock
-        });
-
-        document.getElementById('newProdCode').value = '';
-        document.getElementById('newProdName').value = '';
-        document.getElementById('newProdPrice').value = '';
-
-        this.renderTable();
-        if (typeof renderProducts === 'function') renderProducts();
-
-        if (typeof toast === 'function') toast(`Berhasil menambahkan ${name}!`);
     }
 };
 

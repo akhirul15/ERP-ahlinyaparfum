@@ -93,8 +93,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (branch_id) REFERENCES branches(id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )`);
+
+            db.run(`CREATE TABLE IF NOT EXISTS inventory_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                branch_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                old_stock INTEGER NOT NULL,
+                new_stock INTEGER NOT NULL,
+                difference INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (branch_id) REFERENCES branches(id),
+                FOREIGN KEY (product_id) REFERENCES products(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )`);
         });
     }
 });
+
 
 module.exports = db;

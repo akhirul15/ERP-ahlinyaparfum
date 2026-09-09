@@ -139,35 +139,35 @@ app.post('/api/transactions', authenticateToken, (req, res) => {
                 db.run('ROLLBACK');
                 return res.status(500).json({ error: 'Failed to insert transaction' });
             }
+
+            const insertItem = db.prepare(`
+                INSERT INTO transaction_items (transaction_id, product_id, qty, volume, price)
+                VALUES (?, (SELECT id FROM products WHERE code = ?), ?, ?, ?)
+            `);
+
+            const updateStock = db.prepare(`
+                UPDATE inventory_branch
+                SET stock = stock - ?
+                WHERE branch_id = ? AND product_id = (SELECT id FROM products WHERE code = ?)
+            `);
+
+            for (const item of items) {
+                insertItem.run(id, item.code, item.qty, item.volume, item.price);
+                updateStock.run(item.qty, branch_id, item.code);
+            }
+
+            insertItem.finalize();
+            updateStock.finalize();
+
+            db.run('COMMIT', (err) => {
+                if (err) {
+                    console.error("Error committing transaction", err);
+                    return res.status(500).json({ error: 'Failed to commit transaction' });
+                }
+                res.json({ message: 'Transaction saved successfully' });
+            });
         });
         insertTrx.finalize();
-
-        const insertItem = db.prepare(`
-            INSERT INTO transaction_items (transaction_id, product_id, qty, volume, price)
-            VALUES (?, (SELECT id FROM products WHERE code = ?), ?, ?, ?)
-        `);
-
-        const updateStock = db.prepare(`
-            UPDATE inventory_branch
-            SET stock = stock - ?
-            WHERE branch_id = ? AND product_id = (SELECT id FROM products WHERE code = ?)
-        `);
-
-        for (const item of items) {
-            insertItem.run(id, item.code, item.qty, item.volume, item.price);
-            updateStock.run(item.qty, branch_id, item.code);
-        }
-
-        insertItem.finalize();
-        updateStock.finalize();
-
-        db.run('COMMIT', (err) => {
-            if (err) {
-                console.error("Error committing transaction", err);
-                return res.status(500).json({ error: 'Failed to commit transaction' });
-            }
-            res.json({ message: 'Transaction saved successfully' });
-        });
     });
 });
 
@@ -223,6 +223,91 @@ app.get('/api/reports', authenticateToken, (req, res) => {
 
                 res.json(report);
             });
+        });
+    });
+});
+
+
+// Create a new product (from Stock Opname module)
+app.post('/api/products', authenticateToken, (req, res) => {
+    const { code, name, category, basePrice, branch_id } = req.body;
+
+    if (!code || !name || !basePrice) {
+        return res.status(400).json({ error: 'Code, name, and basePrice are required' });
+    }
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+
+        db.run(`INSERT INTO products (code, name, category, base_price) VALUES (?, ?, ?, ?)`,
+            [code, name, category, basePrice],
+            function(err) {
+                if (err) {
+                    console.error("Error inserting product", err);
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: 'Failed to insert product' });
+                }
+
+                const productId = this.lastID;
+
+                // Initialize stock to 0 for all branches
+                db.all(`SELECT id FROM branches`, (err, branches) => {
+                    if (err) {
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: 'Failed to initialize inventory' });
+                    }
+
+                    const insertInv = db.prepare(`INSERT INTO inventory_branch (product_id, branch_id, stock) VALUES (?, ?, 0)`);
+                    branches.forEach(b => {
+                        insertInv.run(productId, b.id);
+                    });
+                    insertInv.finalize();
+
+                    db.run('COMMIT', (err) => {
+                        if (err) return res.status(500).json({ error: 'Commit failed' });
+                        res.json({ message: 'Product created successfully', id: productId });
+                    });
+                });
+        });
+    });
+});
+
+// Update Inventory (Stock Opname)
+app.post('/api/inventory/opname', authenticateToken, (req, res) => {
+    const { branch_id, user_id, adjustments } = req.body;
+
+    if (!adjustments || !Array.isArray(adjustments)) {
+        return res.status(400).json({ error: 'Adjustments array is required' });
+    }
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+
+        const updateStock = db.prepare(`
+            UPDATE inventory_branch
+            SET stock = ?
+            WHERE branch_id = ? AND product_id = (SELECT id FROM products WHERE code = ?)
+        `);
+
+        const insertLog = db.prepare(`
+            INSERT INTO inventory_logs (branch_id, product_id, user_id, old_stock, new_stock, difference)
+            VALUES (?, (SELECT id FROM products WHERE code = ?), ?, ?, ?, ?)
+        `);
+
+        for (const adj of adjustments) {
+            updateStock.run(adj.physicalStock, branch_id, adj.code);
+            insertLog.run(branch_id, adj.code, user_id, adj.systemStock, adj.physicalStock, adj.physicalStock - adj.systemStock);
+        }
+
+        updateStock.finalize();
+        insertLog.finalize();
+
+        db.run('COMMIT', (err) => {
+            if (err) {
+                console.error("Error committing opname", err);
+                return res.status(500).json({ error: 'Failed to commit stock opname' });
+            }
+            res.json({ message: 'Stock opname completed successfully' });
         });
     });
 });
