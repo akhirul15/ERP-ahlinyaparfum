@@ -12,6 +12,7 @@ const Auth = {
             this.currentUser = JSON.parse(savedSession);
             this.hideLoginModal();
             this.updateUI();
+            if (typeof fetchProducts === 'function') fetchProducts();
         } else {
             this.showLoginModal();
         }
@@ -82,6 +83,10 @@ const Auth = {
 
                 document.getElementById('loginUsername').value = '';
                 document.getElementById('loginPin').value = '';
+
+                if (typeof fetchProducts === 'function') {
+                    fetchProducts();
+                }
             } else {
                 this.showToast(data.error || 'Username atau PIN salah!');
             }
@@ -200,8 +205,9 @@ const Auth = {
                     document.querySelector('.branch strong').textContent = newBranchName;
                     this.showToast(`Cabang aktif diubah ke ${newBranchName}`);
 
-                    // Nanti kita akan panggil fetchProducts berdasarkan cabang
-                    // renderProducts();
+                    if (typeof fetchProducts === 'function') {
+                        fetchProducts();
+                    }
                 };
 
                 // Replace the static text with the dropdown, or append it

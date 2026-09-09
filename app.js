@@ -13,8 +13,29 @@ const state = {
 };
 
 const $ = s => document.querySelector(s);
-const products = window.PRODUCTS || [];
-const categories = ['Semua', ...new Set(products.map(p=>p.category).filter(Boolean))];
+let products = [];
+let categories = ['Semua'];
+
+async function fetchProducts() {
+  const branchId = Auth.currentUser ? Auth.currentUser.branch_id : 1;
+  try {
+    const response = await fetch(`http://localhost:3000/api/products?branch_id=${branchId}`);
+    const data = await response.json();
+    if (response.ok) {
+      if (typeof processProductsCategories === 'function') {
+        products = processProductsCategories(data.products);
+      } else {
+        products = data.products;
+      }
+      window.PRODUCTS = products;
+      categories = ['Semua', ...new Set(products.map(p=>p.category).filter(Boolean))];
+      renderCategories();
+      renderProducts();
+    }
+  } catch (error) {
+    console.error('Failed to fetch products', error);
+  }
+}
 
 function renderCategories(){
   $('#categoryChips').innerHTML = categories.map(c=>`<button class="chip ${state.category===c?'active':''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('');
@@ -330,6 +351,5 @@ $('#sendWhatsapp').onclick = sendWhatsapp;
 $('#sendEmail').onclick = sendEmail;
 
 // Inisialisasi awal
-renderCategories();
-renderProducts();
+fetchProducts();
 renderCart();

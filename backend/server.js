@@ -82,6 +82,43 @@ app.get('/api/branches', (req, res) => {
     });
 });
 
+// Get products endpoint
+app.get('/api/products', (req, res) => {
+    const branch_id = req.query.branch_id;
+
+    let query = `
+        SELECT p.id, p.code, p.name, p.category, p.base_price,
+               IFNULL(ib.stock, 0) as stock
+        FROM products p
+    `;
+    let params = [];
+
+    if (branch_id) {
+        query += ` LEFT JOIN inventory_branch ib ON p.id = ib.product_id AND ib.branch_id = ?`;
+        params.push(branch_id);
+    } else {
+        query += ` LEFT JOIN inventory_branch ib ON p.id = ib.product_id AND ib.branch_id = 1`; // Default to branch 1 if none provided
+    }
+
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching products:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Map to match frontend expected structure
+        const formattedRows = rows.map(row => ({
+            code: row.code,
+            name: row.name,
+            category: row.category,
+            basePrice: row.base_price,
+            stock: row.stock
+        }));
+
+        res.json({ products: formattedRows });
+    });
+});
+
 app.listen(port, () => {
     console.log(`Backend server listening at http://localhost:${port}`);
 });
