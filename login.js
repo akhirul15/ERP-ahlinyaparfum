@@ -172,7 +172,11 @@ const Auth = {
         if (!branchDiv || document.getElementById('branchSelect')) return;
 
         try {
-            const response = await fetch(`${this.backendUrl}/branches`);
+            const response = await fetch(`${this.backendUrl}/branches`, {
+                headers: {
+                    'Authorization': `Bearer ${this.currentUser.token}`
+                }
+            });
             const data = await response.json();
 
             if (response.ok && data.branches) {

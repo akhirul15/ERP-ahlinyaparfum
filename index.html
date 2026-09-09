@@ -34,6 +34,8 @@
         <button class="filter-btn" id="btnStockOpname" style="background: #eef2ff; color: #3949ab; border-color: #c7d2fe;">📦 Stock Opname</button>
         <!-- Tombol Tambahan Modul Riwayat -->
         <button class="filter-btn" id="btnRiwayatTransaksi" style="background: #fffbe6; color: #b45309; border-color: #fef08a;">🕒 Riwayat Transaksi</button>
+        <!-- Tombol Tambahan Laporan Keuangan -->
+        <button class="filter-btn" id="btnFinancialReports" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">📊 Laporan Keuangan</button>
 
       </div>
 
@@ -211,6 +213,53 @@
 
 
 
+<!-- Modal Laporan Keuangan & Form Kas -->
+  <div class="modal-backdrop hidden" id="financialModal" style="z-index: 100;">
+    <div class="modal small" style="width: min(500px, 100%);">
+      <div class="modal-head">
+        <div>
+          <small>Modul Laporan</small>
+          <h2>Keuangan & Arus Kas</h2>
+        </div>
+        <button class="close" data-close="financialModal">×</button>
+      </div>
+
+      <!-- Tambah Arus Kas -->
+      <div style="padding: 20px; background: #fafafa; border-bottom: 1px solid #edf0f3;">
+        <h3 style="margin: 0 0 10px; font-size: 14px;">Catat Arus Kas</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <select id="cashType" class="money-input" style="margin: 0; flex: 1; padding: 10px;">
+            <option value="IN">Kas Masuk</option>
+            <option value="OUT">Kas Keluar</option>
+          </select>
+          <input type="number" id="cashAmount" class="money-input" style="margin: 0; flex: 2;" placeholder="Nominal (Rp)">
+        </div>
+        <input type="text" id="cashDesc" class="money-input" style="margin: 0 0 10px; width: 100%;" placeholder="Keterangan (contoh: Beli ATK)">
+        <button class="primary" id="btnSaveCash" style="width: 100%; margin: 0;">Simpan Arus Kas</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <h3 style="margin: 0 0 15px; font-size: 14px;">Ringkasan (Semua Waktu)</h3>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #edf0f3; padding-bottom: 10px; margin-bottom: 10px;">
+          <span>Total Penjualan</span>
+          <strong id="reportSales" style="color: #111827;">Rp0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #edf0f3; padding-bottom: 10px; margin-bottom: 10px;">
+          <span>Kas Masuk</span>
+          <strong id="reportCashIn" style="color: #10b981;">+ Rp0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #edf0f3; padding-bottom: 10px; margin-bottom: 10px;">
+          <span>Kas Keluar</span>
+          <strong id="reportCashOut" style="color: #ef4444;">- Rp0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-top: 10px;">
+          <span style="font-weight: bold;">Laba Kotor / Saldo Akhir</span>
+          <strong id="reportNet" style="font-size: 20px; color: #3949ab;">Rp0</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- Modal Riwayat Transaksi -->
   <div class="modal-backdrop hidden" id="riwayatModal" style="z-index: 100;">
     <div class="modal receipt-modal">
@@ -251,6 +300,7 @@
   <script src="login.js"></script>
   <script src="products.js"></script>
   <script src="app.js"></script>
+  <script src="reports.js"></script>
 
 </body>
 </html>

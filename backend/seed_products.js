@@ -6,16 +6,11 @@ const db = new sqlite3.Database(dbPath);
 
 const fs = require('fs');
 
-// Read products.js from parent dir
-let productsContent = fs.readFileSync('../products.js', 'utf8');
-
-// The file has a map function at the end that we need to remove for parsing.
-// We extract just the JSON array.
-const startIdx = productsContent.indexOf('[');
-const endIdx = productsContent.lastIndexOf(']') + 1;
-const jsonStr = productsContent.substring(startIdx, endIdx);
-
 try {
+    let productsContent = fs.readFileSync('../products_old.json', 'utf8');
+    const startIdx = productsContent.indexOf('[');
+    const endIdx = productsContent.lastIndexOf(']') + 1;
+    const jsonStr = productsContent.substring(startIdx, endIdx);
     const products = JSON.parse(jsonStr);
 
     db.serialize(() => {
@@ -29,8 +24,6 @@ try {
 
         insertProduct.finalize();
 
-        // After inserting products, we insert inventory.
-        // We'll give branch 1 default stock, and branch 2 slightly different stock
         const insertInventory = db.prepare(`
             INSERT OR IGNORE INTO inventory_branch (product_id, branch_id, stock)
             SELECT id, ?, ? FROM products WHERE code = ?
@@ -50,5 +43,5 @@ try {
         });
     });
 } catch(e) {
-    console.error("Error parsing products.js", e);
+    console.error("Error parsing products", e);
 }

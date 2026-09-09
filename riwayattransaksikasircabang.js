@@ -23,22 +23,22 @@ const TransactionHistory = {
     hookFinishPayment() {
         if (typeof window.finishPayment === 'function') {
             const originalFinishPayment = window.finishPayment;
-            
+
             window.finishPayment = () => {
                 // Jalankan fungsi aslinya terlebih dahulu
                 originalFinishPayment();
-                
+
                 // Ambil data transaksi yang baru saja selesai
                 if (typeof state !== 'undefined' && state.lastReceipt) {
                     const exists = this.historyData.find(t => t.id === state.lastReceipt.id);
                     if (!exists) {
-                        const newTrx = { 
-                            ...state.lastReceipt, 
-                            status: 'Completed', 
-                            timestamp: new Date() 
+                        const newTrx = {
+                            ...state.lastReceipt,
+                            status: 'Completed',
+                            timestamp: new Date()
                         };
                         // Masukkan ke urutan paling atas
-                        this.historyData.unshift(newTrx); 
+                        this.historyData.unshift(newTrx);
                     }
                 }
             };
@@ -104,10 +104,10 @@ const TransactionHistory = {
         if (trxIndex > -1) {
             // Ubah status transaksi menjadi Void
             this.historyData[trxIndex].status = 'Void';
-            
-            // Catatan: Jika nanti sudah ada backend database, 
+
+            // Catatan: Jika nanti sudah ada backend database,
             // script API untuk mengembalikan stok (RESTORE STOCK) dikirimkan dari fungsi ini.
-            
+
             this.renderTable();
             if (typeof toast === 'function') toast(`Transaksi ${trxId} berhasil di-Void.`);
         }

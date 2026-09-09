@@ -1,7 +1,7 @@
 // --- MODUL: STOCK OPNAME & CRUD VARIAN (KASIR) ---
 
 const StockOpname = {
-    opnameData: [], 
+    opnameData: [],
 
     init() {
         setTimeout(() => {
@@ -38,16 +38,16 @@ const StockOpname = {
 
     openModal() {
         const productList = window.PRODUCTS || products || [];
-        
+
         this.opnameData = productList.map(p => ({
             code: p.code,
             name: p.name,
             systemStock: p.stock,
-            physicalStock: p.stock 
+            physicalStock: p.stock
         }));
 
         this.renderTable();
-        
+
         const modal = document.getElementById('opnameModal');
         if (modal) modal.classList.remove('hidden');
     },
@@ -59,7 +59,7 @@ const StockOpname = {
         tbody.innerHTML = this.opnameData.map((item, index) => {
             const selisih = item.physicalStock - item.systemStock;
             const selisihColor = selisih < 0 ? '#ef4444' : (selisih > 0 ? '#10b981' : '#68717e');
-            
+
             return `
             <tr style="border-bottom: 1px solid #edf0f3;">
                 <td style="padding: 10px 5px; font-size: 11px; color: #8a929e;">#${item.code}</td>
@@ -83,13 +83,13 @@ const StockOpname = {
     handleInput(e) {
         const index = e.target.dataset.index;
         let val = parseInt(e.target.value, 10);
-        if (isNaN(val) || val < 0) val = 0; 
+        if (isNaN(val) || val < 0) val = 0;
 
         this.opnameData[index].physicalStock = val;
-        
+
         const item = this.opnameData[index];
         const selisih = item.physicalStock - item.systemStock;
-        
+
         const selisihTd = document.getElementById(`selisih-${index}`);
         if (selisihTd) {
             selisihTd.textContent = `${selisih > 0 ? '+' : ''}${selisih}`;
@@ -137,7 +137,7 @@ const StockOpname = {
         }
 
         const productList = window.PRODUCTS || products || [];
-        
+
         if (productList.some(p => p.code === code)) {
             if (typeof toast === 'function') toast('Kode produk sudah ada!');
             return;
@@ -150,9 +150,9 @@ const StockOpname = {
             basePrice: price,
             stock: 0
         };
-        
+
         productList.push(newProduct);
-        
+
         this.opnameData.unshift({
             code: newProduct.code,
             name: newProduct.name,
@@ -166,7 +166,7 @@ const StockOpname = {
 
         this.renderTable();
         if (typeof renderProducts === 'function') renderProducts();
-        
+
         if (typeof toast === 'function') toast(`Berhasil menambahkan ${name}!`);
     }
 };

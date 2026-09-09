@@ -19,7 +19,11 @@ let categories = ['Semua'];
 async function fetchProducts() {
   const branchId = Auth.currentUser ? Auth.currentUser.branch_id : 1;
   try {
-    const response = await fetch(`http://localhost:3000/api/products?branch_id=${branchId}`);
+    const response = await fetch(`http://localhost:3000/api/products?branch_id=${branchId}`, {
+      headers: {
+        'Authorization': `Bearer ${Auth.currentUser ? Auth.currentUser.token : ''}`
+      }
+    });
     const data = await response.json();
     if (response.ok) {
       if (typeof processProductsCategories === 'function') {
@@ -214,7 +218,7 @@ function checkout(){
   setTimeout(() => { if($('#cashReceived')) $('#cashReceived').focus(); }, 100);
 }
 
-function finishPayment(){
+async function finishPayment(){
   const total = parseInt($('#total').textContent.replace(/[^\d]/g,''), 10) || 0;
   const received = state.paymentMethod === 'Cash' ? (parseInt($('#cashReceived').value, 10) || 0) : total;
   
@@ -226,6 +230,38 @@ function finishPayment(){
   const id = 'TRX-' + Date.now();
   const change = Math.max(0, received - total);
   state.lastReceipt = {id, total, received, change, method: state.paymentMethod, items: [...state.cart], member: state.member};
+
+  // Kirim data transaksi ke Backend
+  try {
+    const branchId = Auth.currentUser ? Auth.currentUser.branch_id : 1;
+    const userId = Auth.currentUser ? Auth.currentUser.id : 1;
+
+    const response = await fetch('http://localhost:3000/api/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Auth.currentUser ? Auth.currentUser.token : ''}`
+      },
+      body: JSON.stringify({
+        id: state.lastReceipt.id,
+        branch_id: branchId,
+        user_id: userId,
+        customer_id: state.lastReceipt.member ? state.lastReceipt.member.id : null,
+        total: state.lastReceipt.total,
+        received: state.lastReceipt.received,
+        change: state.lastReceipt.change,
+        method: state.lastReceipt.method,
+        items: state.lastReceipt.items
+      })
+    });
+
+    if(!response.ok) {
+        throw new Error('Gagal menyimpan transaksi ke database');
+    }
+  } catch (error) {
+    console.error(error);
+    toast('Gagal menyimpan transaksi ke server, tapi resi tetap dicetak.');
+  }
   
   // Reset setelah bayar
   state.cart = [];
@@ -240,6 +276,9 @@ function finishPayment(){
   $('#receiptModal').classList.remove('hidden');
   renderCart();
   toast('Transaksi berhasil disimpan');
+
+  // Refresh products to show updated stock
+  fetchProducts();
 }
 
 function renderReceipt(){
